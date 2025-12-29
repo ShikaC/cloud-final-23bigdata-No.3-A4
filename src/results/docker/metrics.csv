@@ -1,0 +1,6 @@
+metric,value
+startup_time_sec,0.369050952
+cpu_percent,0.00
+memory_mb,14.09
+disk_mb,102.52
+container_ip,172.17.0.2

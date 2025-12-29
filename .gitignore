@@ -1,5 +1,9 @@
 # OS
 .DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
 
 # Office / temp
 ~$*.pptx
@@ -15,3 +19,106 @@
 # Large binaries (optional): keep evidence, but avoid huge raw captures
 *.mp4
 *.mov
+
+# ===== Python =====
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Python virtual environment
+venv/
+env/
+ENV/
+.venv/
+src/venv/
+*.egg-info/
+.eggs/
+
+# Distribution / packaging
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# ===== IDE / Editor =====
+# VS Code
+.vscode/
+*.code-workspace
+
+# PyCharm
+.idea/
+*.iml
+
+# Vim
+*.swp
+*.swo
+
+# Emacs
+*~
+\#*\#
+
+# ===== Docker / KVM / VM =====
+# VM images (keep small test images if needed as evidence)
+*.qcow2
+*.vmdk
+*.vdi
+*.vhd
+# But allow tracking smaller images in assets if needed:
+# !assets/*.qcow2
+
+# Docker
+.dockerignore
+
+# ===== Project Specific =====
+# Temporary experiment results (keep final results in src/results/)
+src/results/tmp/
+src/results/*.tmp
+src/results/raw_logs/
+
+# Local config / secrets
+.env
+*.pem
+*.key
+*.crt
+id_rsa*
+*.ovpn
+
+# Temp scripts
+temp.sh
+test_tmp.sh
+debug_*.sh
