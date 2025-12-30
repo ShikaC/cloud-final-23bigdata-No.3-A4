@@ -217,9 +217,9 @@ log "采集性能指标..."
 # 【关键修复】先产生负载，再采集CPU
 log "产生负载以获取真实CPU数据..."
 for i in {1..50}; do
-    curl -s -o /dev/null "http://${VM_IP}:${APP_PORT}" &
+    curl -s -o /dev/null "http://${VM_IP}:${APP_PORT}" >/dev/null 2>&1 || true &
 done
-wait
+wait || true
 sleep 0.5
 
 # ============================================================================
@@ -254,9 +254,9 @@ T0=$(date +%s.%N)
 LOAD_END=$((SECONDS + 2))
 while [[ ${SECONDS} -lt ${LOAD_END} ]]; do
     for j in {1..25}; do
-        curl -s -o /dev/null "http://${VM_IP}:${APP_PORT}/" &
+        curl -s -o /dev/null "http://${VM_IP}:${APP_PORT}/" >/dev/null 2>&1 || true &
     done
-    wait
+    wait || true
 done
 
 CPU_T1=$(get_nginx_cpu_ticks)

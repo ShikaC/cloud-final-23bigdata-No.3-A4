@@ -195,9 +195,9 @@ T0=$(date +%s.%N)
 LOAD_END=$((SECONDS + 2))
 while [[ ${SECONDS} -lt ${LOAD_END} ]]; do
     for j in {1..25}; do
-        curl -s -o /dev/null "http://localhost:${APP_PORT}/" &
+        curl -s -o /dev/null "http://localhost:${APP_PORT}/" >/dev/null 2>&1 || true &
     done
-    wait
+    wait || true
 done
 
 CPU_T1=$(get_container_nginx_cpu_ticks)

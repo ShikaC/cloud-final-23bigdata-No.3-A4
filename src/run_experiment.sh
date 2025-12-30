@@ -168,7 +168,8 @@ run_docker_test() {
     # 为保证公平对等：Docker 镜像 Nginx 版本跟随 VM 上的 nginx 版本（例如 nginx/1.26.3）
     local vm_nginx_ver=""
     if command -v nginx >/dev/null 2>&1; then
-        vm_nginx_ver=$(nginx -v 2>&1 | sed -E 's#.*nginx/([0-9.]+).*#\\1#')
+        vm_nginx_ver=$(nginx -v 2>&1 | sed -E 's#.*nginx/([0-9.]+).*#\1#')
+        [[ "${vm_nginx_ver}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || vm_nginx_ver=""
     fi
     local docker_image="nginx:1.26.3-alpine"
     [[ -n "${vm_nginx_ver}" ]] && docker_image="nginx:${vm_nginx_ver}-alpine"
