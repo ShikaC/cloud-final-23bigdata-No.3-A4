@@ -78,8 +78,8 @@ install_python_deps() {
         log "创建Python虚拟环境..."
         python3 -m venv "$VENV_DIR" || {
             log_warning "虚拟环境创建失败，将使用系统Python"
-            python3 -m pip install --user --break-system-packages matplotlib pandas seaborn numpy 2>/dev/null || \
-                python3 -m pip install --user matplotlib pandas seaborn numpy
+            python3 -m pip install --user --break-system-packages plotly pandas numpy pillow nbformat 2>/dev/null || \
+                python3 -m pip install --user plotly pandas numpy pillow nbformat
             log_success "Python依赖安装完成"
             return
         }
@@ -92,7 +92,7 @@ install_python_deps() {
     if [ -f "${SCRIPT_DIR}/requirements.txt" ]; then
         pip install -q -r "${SCRIPT_DIR}/requirements.txt"
     else
-        pip install -q matplotlib pandas seaborn numpy
+        pip install -q plotly pandas numpy pillow nbformat
     fi
     
     log_success "Python依赖已安装到虚拟环境"
@@ -112,7 +112,7 @@ verify_installation() {
         source "$VENV_DIR/bin/activate"
     fi
     
-    python3 -c "import matplotlib" 2>/dev/null || { log_error "matplotlib未安装"; all_ok=false; }
+    python3 -c "import plotly" 2>/dev/null || { log_error "plotly未安装"; all_ok=false; }
     python3 -c "import pandas" 2>/dev/null || { log_error "pandas未安装"; all_ok=false; }
     
     if [ "$all_ok" = true ]; then
