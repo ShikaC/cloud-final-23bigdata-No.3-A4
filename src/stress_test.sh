@@ -86,8 +86,10 @@ run_ab() {
     sleep 2
     
     # 正式压测：确保两种模式使用完全相同的参数
+    # 添加 -k (Keep-Alive) 以测试真实吞吐量
     log "正式压测 ${name}..."
-    if ! ab -n "${TOTAL_REQUESTS}" -c "${CONCURRENCY}" -q "${url}/" > "${outfile}" 2>&1; then
+    ulimit -n 65535 >/dev/null 2>&1 || true
+    if ! ab -n "${TOTAL_REQUESTS}" -c "${CONCURRENCY}" -k -q "${url}/" > "${outfile}" 2>&1; then
         log_error "${name} 压测失败"
         echo "${name},0,0,0,0" >> "${OUTPUT_CSV}"
         return 1

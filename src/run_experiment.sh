@@ -184,6 +184,9 @@ run_stress_test() {
     echo -e "${BOLD}${BLUE}━━━━ 步骤 3/4: 压力测试 ━━━━${NC}"
     echo ""
     
+    # 提升系统文件描述符限制，防止高并发下丢包
+    ulimit -n 65535 >/dev/null 2>&1 || true
+    
     local vm_ip="localhost"
     [[ -f "${RESULT_DIR}/vm/vm_ip.txt" ]] && vm_ip=$(cat "${RESULT_DIR}/vm/vm_ip.txt")
     
@@ -192,10 +195,11 @@ run_stress_test() {
     
     log "压测目标: VM=${vm_url}, Docker=${docker_url}"
     
+    # 增加压测强度，以便更明显地观察到性能差异
     if ! bash "${SCRIPT_DIR}/stress_test.sh" \
         --vm-url "${vm_url}" \
         --docker-url "${docker_url}" \
-        --requests 10000 \
+        --requests 20000 \
         --concurrency 1000 \
         --output-dir "${RESULT_DIR}" \
         --output-csv "${STRESS_CSV}"; then

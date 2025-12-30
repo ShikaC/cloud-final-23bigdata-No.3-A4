@@ -136,26 +136,27 @@ cat > "${NGINX_CONF}" <<NGINXEOF
 user www-data;
 worker_processes ${CPU_CORES};
 worker_cpu_affinity auto;
+worker_rlimit_nofile 65535;
 pid /tmp/nginx_test_${APP_PORT}.pid;
 
 events {
     use epoll;
-    worker_connections 10240;
+    worker_connections 20480;
     multi_accept on;
 }
 
 http {
-    access_log /tmp/nginx_access_${APP_PORT}.log;
-    error_log /tmp/nginx_error_${APP_PORT}.log;
+    access_log off;
+    error_log off;
     
     sendfile on;
     tcp_nopush on;
     tcp_nodelay on;
     keepalive_timeout 65;
-    keepalive_requests 1000;
+    keepalive_requests 10000;
     
     server {
-        # 只监听 VM 的内网 IP，避免与 Docker 在同一端口冲突（Docker 仅绑定 127.0.0.1）
+        # 只监听 VM 的内网 IP，避免与 Docker 在同一端口冲突
         listen ${VM_IP}:${APP_PORT} reuseport;
         server_name ${VM_IP};
         

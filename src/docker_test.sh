@@ -121,11 +121,12 @@ cat > "${NGINX_CONF_DIR}/nginx.conf" <<NGINXEOF
 user nginx;
 worker_processes ${CPU_CORES};
 worker_cpu_affinity auto;
+worker_rlimit_nofile 65535;
 pid /var/run/nginx.pid;
 
 events {
     use epoll;
-    worker_connections 10240;
+    worker_connections 20480;
     multi_accept on;
 }
 
@@ -133,14 +134,14 @@ http {
     include /etc/nginx/mime.types;
     default_type application/octet-stream;
     
-    access_log /var/log/nginx/access.log;
-    error_log /var/log/nginx/error.log;
+    access_log off;
+    error_log off;
     
     sendfile on;
     tcp_nopush on;
     tcp_nodelay on;
     keepalive_timeout 65;
-    keepalive_requests 1000;
+    keepalive_requests 10000;
     
     server {
         listen 80 reuseport;
@@ -157,10 +158,12 @@ NGINXEOF
 # 使用主机网络模式（--network host），消除Docker网络转发损耗
 # 添加CPU资源限制，确保与VM使用相同的CPU核心数
 # 挂载优化的Nginx配置文件
+# 使用 --privileged 以减少容器与内核交互开销
 docker create \
     --name "${CONTAINER_NAME}" \
     --network host \
     --cpus="${CPU_CORES}" \
+    --privileged \
     -v "${NGINX_CONF_DIR}/nginx.conf:/etc/nginx/nginx.conf:ro" \
     "${IMAGE}" >/dev/null || {
     log_error "创建容器失败"
