@@ -27,8 +27,9 @@ RESULT_DIR="${SCRIPT_DIR}/results"
 VIS_DIR="${RESULT_DIR}/visualization"
 PERF_CSV="${RESULT_DIR}/performance.csv"
 STRESS_CSV="${RESULT_DIR}/stress.csv"
-APP_PORT=8080
+APP_PORT=${APP_PORT:-8080}  # 支持环境变量配置
 SKIP_DEPS=false
+AUTO_PORT=false  # 自动选择可用端口
 
 # 兼容性：如果存在旧的 kvm 目录，重命名为 vm
 if [[ -d "${RESULT_DIR}/kvm" ]] && [[ ! -d "${RESULT_DIR}/vm" ]]; then
@@ -170,6 +171,108 @@ EOF
     fi
 }
 
+check_and_fix_port() {
+    log "检查端口 ${APP_PORT}..."
+    
+    # 检查端口是否被占用
+    local port_in_use=false
+    if command -v ss >/dev/null 2>&1; then
+        if ss -tuln 2>/dev/null | grep -q ":${APP_PORT} "; then
+            port_in_use=true
+        fi
+    elif command -v netstat >/dev/null 2>&1; then
+        if netstat -tuln 2>/dev/null | grep -q ":${APP_PORT} "; then
+            port_in_use=true
+        fi
+    fi
+    
+    if [[ "$port_in_use" == "true" ]]; then
+        log_warning "端口 ${APP_PORT} 已被占用"
+        
+        # 显示占用信息
+        if [[ -f "${SCRIPT_DIR}/port_manager.sh" ]]; then
+            bash "${SCRIPT_DIR}/port_manager.sh" info "${APP_PORT}" 2>/dev/null || true
+        fi
+        
+        echo ""
+        
+        if [[ "$AUTO_PORT" == "true" ]]; then
+            log "自动查找可用端口..."
+            local new_port
+            if [[ -f "${SCRIPT_DIR}/port_manager.sh" ]]; then
+                new_port=$(bash "${SCRIPT_DIR}/port_manager.sh" find "${APP_PORT}" 50 2>/dev/null | tail -1 || echo "")
+            else
+                # 简单的端口查找
+                for ((i=0; i<50; i++)); do
+                    local test_port=$((APP_PORT + i))
+                    if ! (ss -tuln 2>/dev/null | grep -q ":${test_port} " || netstat -tuln 2>/dev/null | grep -q ":${test_port} "); then
+                        new_port=$test_port
+                        break
+                    fi
+                done
+            fi
+            
+            if [[ -n "$new_port" ]]; then
+                APP_PORT=$new_port
+                log_success "自动选择端口: ${APP_PORT}"
+            else
+                log_error "无法找到可用端口"
+                exit 1
+            fi
+        else
+            log_warning "请选择以下操作："
+            echo "  1. 释放端口 ${APP_PORT}（杀死占用进程）"
+            echo "  2. 使用其他端口"
+            echo "  3. 退出"
+            echo ""
+            read -p "请选择 [1-3]: " -n 1 -r choice
+            echo ""
+            
+            case $choice in
+                1)
+                    log "释放端口 ${APP_PORT}..."
+                    if [[ -f "${SCRIPT_DIR}/port_manager.sh" ]]; then
+                        if bash "${SCRIPT_DIR}/port_manager.sh" kill "${APP_PORT}" -f; then
+                            log_success "端口已释放"
+                        else
+                            log_error "释放端口失败"
+                            exit 1
+                        fi
+                    else
+                        log_error "找不到 port_manager.sh，无法自动释放端口"
+                        log_info "请手动释放端口或使用其他端口"
+                        exit 1
+                    fi
+                    ;;
+                2)
+                    read -p "请输入新端口号: " new_port
+                    if [[ "$new_port" =~ ^[0-9]+$ ]] && [[ $new_port -ge 1 ]] && [[ $new_port -le 65535 ]]; then
+                        APP_PORT=$new_port
+                        log_info "使用端口: ${APP_PORT}"
+                        # 递归检查新端口
+                        check_and_fix_port
+                    else
+                        log_error "无效的端口号"
+                        exit 1
+                    fi
+                    ;;
+                3)
+                    log "退出"
+                    exit 0
+                    ;;
+                *)
+                    log_error "无效的选择"
+                    exit 1
+                    ;;
+            esac
+        fi
+    else
+        log_success "端口 ${APP_PORT} 可用"
+    fi
+    
+    echo ""
+}
+
 validate_environment() {
     # 基本工具检查（vm_test.sh 会自动安装缺失的工具）
     log "验证运行环境..."
@@ -185,6 +288,9 @@ validate_environment() {
     
     log_success "环境验证完成"
     echo ""
+    
+    # 检查并处理端口冲突
+    check_and_fix_port
 }
 
 activate_venv() {
@@ -268,6 +374,14 @@ parse_args() {
                 SKIP_DEPS=true
                 shift
                 ;;
+            --port)
+                APP_PORT="$2"
+                shift 2
+                ;;
+            --auto-port)
+                AUTO_PORT=true
+                shift
+                ;;
             -h|--help)
                 show_help
                 exit 0
@@ -289,16 +403,45 @@ show_help() {
 
 选项:
   --skip-deps      跳过依赖安装（假设已安装）
-  -h, --help      显示此帮助信息
+  --port <端口>     指定使用的端口号（默认: 8080）
+  --auto-port      自动查找可用端口（遇到冲突时）
+  -h, --help       显示此帮助信息
+
+端口配置:
+  可通过以下方式指定端口：
+  1. 环境变量: export APP_PORT=9090 && bash run_experiment.sh
+  2. 命令参数: bash run_experiment.sh --port 9090
+  3. 自动模式: bash run_experiment.sh --auto-port
+
+  如果端口被占用，脚本会提示您：
+  - 释放该端口（杀死占用进程）
+  - 选择其他端口
+  - 或使用 --auto-port 自动选择
 
 示例:
-  bash run_experiment.sh              # 完整运行（包含依赖安装）
-  bash run_experiment.sh --skip-deps  # 跳过依赖安装
-  sudo bash run_experiment.sh         # 使用 sudo 运行
+  bash run_experiment.sh                      # 完整运行（默认端口8080）
+  bash run_experiment.sh --skip-deps          # 跳过依赖安装
+  bash run_experiment.sh --port 9090          # 使用端口9090
+  bash run_experiment.sh --auto-port          # 自动选择可用端口
+  APP_PORT=9090 bash run_experiment.sh        # 通过环境变量指定端口
+  sudo bash run_experiment.sh                 # 使用 sudo 运行
+
+端口管理工具:
+  # 检查端口是否被占用
+  bash src/port_manager.sh check 8080
+  
+  # 查看占用端口的进程
+  bash src/port_manager.sh info 8080
+  
+  # 释放端口（杀死占用进程）
+  bash src/port_manager.sh kill 8080
+  
+  # 查找可用端口
+  bash src/port_manager.sh find 8080
 
 说明:
   脚本会自动：
-  1. 检查系统环境
+  1. 检查系统环境和端口可用性
   2. 安装缺失的依赖（如果需要）
   3. 运行 VM 测试（VMWare 虚拟机 + Nginx）
   4. 运行 Docker 测试（容器 + Nginx）
