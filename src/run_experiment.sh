@@ -59,32 +59,20 @@ print_banner() {
 check_and_fix_port() {
     log "检查端口 ${APP_PORT}..."
     
-    local port_in_use=false
-    if command -v ss >/dev/null 2>&1; then
-        ss -tuln 2>/dev/null | grep -q ":${APP_PORT} " && port_in_use=true
-    elif command -v netstat >/dev/null 2>&1; then
-        netstat -tuln 2>/dev/null | grep -q ":${APP_PORT} " && port_in_use=true
-    fi
-    
-    if [[ "$port_in_use" == "true" ]]; then
+    if bash "${SCRIPT_DIR}/port_manager.sh" check "${APP_PORT}" >/dev/null 2>&1; then
+        log_success "端口 ${APP_PORT} 可用"
+    else
         log_warning "端口 ${APP_PORT} 已被占用"
         
         if [[ "$AUTO_PORT" == "true" ]]; then
-            for ((i=0; i<50; i++)); do
-                local test_port=$((APP_PORT + i))
-                if ! (ss -tuln 2>/dev/null | grep -q ":${test_port} " || netstat -tuln 2>/dev/null | grep -q ":${test_port} "); then
-                    APP_PORT=$test_port
-                    log_success "自动选择端口: ${APP_PORT}"
-                    return
-                fi
-            done
-            log_error "无法找到可用端口"
-            exit 1
+            APP_PORT=$(bash "${SCRIPT_DIR}/port_manager.sh" find "${APP_PORT}" | tail -n 1)
+            log_success "自动选择端口: ${APP_PORT}"
         else
             log_warning "请选择操作："
             echo "  1. 使用其他端口"
-            echo "  2. 退出"
-            read -p "请选择 [1-2]: " -n 1 -r choice
+            echo "  2. 强制释放端口 (需要 sudo)"
+            echo "  3. 退出"
+            read -p "请选择 [1-3]: " -n 1 -r choice
             echo ""
             
             case $choice in
@@ -99,6 +87,15 @@ check_and_fix_port() {
                     fi
                     ;;
                 2)
+                    if sudo bash "${SCRIPT_DIR}/port_manager.sh" kill "${APP_PORT}" -f; then
+                        log_success "端口已释放"
+                        check_and_fix_port
+                    else
+                        log_error "无法释放端口"
+                        exit 1
+                    fi
+                    ;;
+                3)
                     exit 0
                     ;;
                 *)
@@ -107,8 +104,6 @@ check_and_fix_port() {
                     ;;
             esac
         fi
-    else
-        log_success "端口 ${APP_PORT} 可用"
     fi
 }
 
@@ -212,9 +207,27 @@ run_stress_test() {
     return 0
 }
 
+run_analysis() {
+    echo ""
+    echo -e "${BOLD}${BLUE}━━━━ 步骤 4/5: 生成分析报告 ━━━━${NC}"
+    echo ""
+    
+    if ! python3 "${SCRIPT_DIR}/analyze_results.py" \
+        --vm-dir "${RESULT_DIR}/vm" \
+        --docker-dir "${RESULT_DIR}/docker" \
+        --stress-dir "${RESULT_DIR}" \
+        --output-file "${RESULT_DIR}/analysis_report.md"; then
+        log_error "分析报告生成失败"
+        return 1
+    fi
+    
+    log_success "分析报告已生成: ${RESULT_DIR}/analysis_report.md"
+    return 0
+}
+
 run_visualization() {
     echo ""
-    echo -e "${BOLD}${BLUE}━━━━ 步骤 4/4: 生成可视化图表 ━━━━${NC}"
+    echo -e "${BOLD}${BLUE}━━━━ 步骤 5/5: 生成可视化图表 ━━━━${NC}"
     echo ""
     
     if [[ ! -f "${PERF_CSV}" ]] || [[ ! -f "${STRESS_CSV}" ]]; then
@@ -244,6 +257,7 @@ show_results() {
     log_info "结果文件："
     echo "  ✓ 性能数据: ${PERF_CSV}"
     echo "  ✓ 压测数据: ${STRESS_CSV}"
+    echo "  ✓ 分析报告: ${RESULT_DIR}/analysis_report.md"
     echo "  ✓ 图表目录: ${VIS_DIR}/"
     echo ""
     
@@ -318,6 +332,7 @@ log "等待系统稳定..."
 sleep 2
 
 run_stress_test || log_warning "压测失败"
+run_analysis || log_warning "分析失败"
 run_visualization || log_warning "可视化失败"
 
 show_results

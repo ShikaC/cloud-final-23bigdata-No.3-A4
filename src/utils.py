@@ -89,6 +89,29 @@ def ensure_dir_exists(dirpath: Union[str, Path]) -> Path:
     return path
 
 
+def read_file_content(filepath: Union[str, Path], default: str = "0") -> str:
+    """读取文件内容
+    
+    Args:
+        filepath: 文件路径
+        default: 文件不存在或读取失败时的默认值
+        
+    Returns:
+        文件内容或默认值
+    """
+    try:
+        path = Path(filepath)
+        if path.exists():
+            with open(path, 'r', encoding='utf-8') as f:
+                content = f.read().strip()
+                return content if content else default
+        logging.debug(f"文件不存在: {path}")
+        return default
+    except Exception as e:
+        logging.warning(f"读取文件失败 {filepath}: {e}")
+        return default
+
+
 def safe_float_parse(value: Any, default: float = 0.0) -> float:
     """安全地将值转换为浮点数
     

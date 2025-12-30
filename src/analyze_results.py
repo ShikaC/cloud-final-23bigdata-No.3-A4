@@ -20,67 +20,12 @@ from pathlib import Path
 from datetime import datetime
 from typing import Dict, Any, Optional, List
 
-
-def read_file_content(filepath: Path, default: str = "0") -> str:
-    """读取文件内容
-    
-    Args:
-        filepath: 文件路径
-        default: 文件不存在或读取失败时的默认值
-        
-    Returns:
-        文件内容或默认值
-    """
-    try:
-        if filepath.exists():
-            with open(filepath, 'r', encoding='utf-8') as f:
-                content = f.read().strip()
-                return content if content else default
-        logging.debug(f"文件不存在: {filepath}")
-        return default
-    except Exception as e:
-        logging.warning(f"读取文件失败 {filepath}: {e}")
-        return default
-
-
-def parse_number(value: Any, default: float = 0.0) -> float:
-    """将字符串转换为数字
-    
-    Args:
-        value: 要转换的值
-        default: 转换失败时的默认值
-        
-    Returns:
-        转换后的数字或默认值
-    """
-    try:
-        value_str = str(value).strip()
-        for unit in ['MB', 'GB', 'KB', 'B']:
-            value_str = value_str.replace(unit, '')
-        return float(value_str)
-    except (ValueError, TypeError) as e:
-        logging.debug(f"数字解析失败 '{value}': {e}")
-        return default
-
-
-def format_bytes(bytes_value: Any) -> str:
-    """格式化字节数为人类可读格式
-    
-    Args:
-        bytes_value: 字节数
-        
-    Returns:
-        格式化后的字符串（如 "1.50 MB"）
-    """
-    try:
-        value = float(bytes_value)
-        for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
-            if value < 1024.0:
-                return f"{value:.2f} {unit}"
-            value /= 1024.0
-        return f"{value:.2f} PB"
-    except (ValueError, TypeError):
-        return str(bytes_value)
+from utils import (
+    read_file_content,
+    safe_float_parse as parse_number,
+    format_size as format_bytes,
+    setup_logging
+)
 
 
 def load_performance_data(vm_dir: str, docker_dir: str) -> Dict[str, Dict[str, Any]]:

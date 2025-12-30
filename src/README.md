@@ -86,9 +86,10 @@ bash port_manager.sh find 8080     # 查找可用端口
 results/
 ├── performance.csv           # 性能对比数据
 ├── stress.csv                # 压测数据
-├── visualization/            # 可视化图表
-│   ├── performance_comparison.png
-│   └── stress_comparison.png
+├── visualization/            # 交互式可视化图表 (HTML)
+│   ├── performance_comparison.html
+│   └── stress_comparison.html
+├── analysis_report.md        # 自动生成的详细分析报告
 ├── vm/                       # VM测试详细数据
 └── docker/                   # Docker测试详细数据
 ```
