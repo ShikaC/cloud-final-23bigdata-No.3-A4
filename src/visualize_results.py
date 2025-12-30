@@ -6,6 +6,7 @@ import argparse
 import os
 import sys
 import logging
+import warnings
 from pathlib import Path
 from typing import List, Optional
 
@@ -14,6 +15,10 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import seaborn as sns
+
+# 抑制matplotlib的字体警告
+warnings.filterwarnings('ignore', category=UserWarning, module='matplotlib')
+warnings.filterwarnings('ignore', category=FutureWarning, module='seaborn')
 
 
 def load_csv(path: str, required_cols: List[str]) -> pd.DataFrame:
@@ -26,7 +31,7 @@ def load_csv(path: str, required_cols: List[str]) -> pd.DataFrame:
     if missing:
         raise ValueError(f"{path} 缺少必需的列: {missing}")
     
-    logging.info(f"加载 {path}: {len(df)} 行")
+    logging.debug(f"加载 {path}: {len(df)} 行")
     return df
 
 
@@ -52,7 +57,7 @@ def ensure_chinese_font() -> None:
                 font_name = fm.FontProperties(fname=font_path).get_name()
                 plt.rcParams['font.sans-serif'] = [font_name, 'DejaVu Sans']
                 plt.rcParams['axes.unicode_minus'] = False
-                logging.info(f"成功加载中文字体: {font_name}")
+                logging.debug(f"成功加载中文字体: {font_name}")
                 return
             except Exception as e:
                 logging.debug(f"加载字体失败 {font_path}: {e}")
@@ -66,19 +71,20 @@ def ensure_chinese_font() -> None:
         if font_name in available_fonts:
             plt.rcParams['font.sans-serif'] = [font_name, 'DejaVu Sans']
             plt.rcParams['axes.unicode_minus'] = False
-            logging.info(f"使用系统字体: {font_name}")
+            logging.debug(f"使用系统字体: {font_name}")
             return
     
     # 使用DejaVu Sans作为后备（虽然不支持中文，但不会报错）
     plt.rcParams['font.sans-serif'] = ['DejaVu Sans']
     plt.rcParams['axes.unicode_minus'] = False
-    logging.warning("未找到中文字体，中文可能显示为方框")
+    logging.debug("未找到中文字体，使用默认字体")
 
 
 def bar(ax, df, x, y, title, ylabel, fmt="{:.2f}", palette=None):
     """绘制柱状图"""
     palette = palette or ["#4ECDC4", "#FF6B6B"]
-    bars = sns.barplot(ax=ax, data=df, x=x, y=y, palette=palette, legend=False)
+    # 修复seaborn警告：将x映射到hue并设置legend=False
+    bars = sns.barplot(ax=ax, data=df, x=x, y=y, hue=x, palette=palette, legend=False)
     
     for patch, val in zip(bars.patches, df[y].tolist()):
         height = patch.get_height()

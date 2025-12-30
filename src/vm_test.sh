@@ -233,6 +233,11 @@ echo "${VM_IP}" > "${OUTPUT_DIR}/vm_ip.txt"
 
 [[ -n "${PERF_CSV}" ]] && echo "vm,${STARTUP_TIME},${CPU_PERCENT},${MEMORY_MB},${DISK_MB}" >> "${PERF_CSV}"
 
+# 清理：停止Nginx以释放端口，避免影响后续Docker测试
+log "清理Nginx进程..."
+sudo pkill -9 nginx 2>/dev/null || true
+sudo rm -f "/tmp/nginx_test_${APP_PORT}.pid" 2>/dev/null || true
+
 echo ""
 log_success "VM测试完成"
 log "结果: ${OUTPUT_DIR}"
