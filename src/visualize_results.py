@@ -69,6 +69,11 @@ def plot_performance(perf_df, out_dir):
 
     output_path = Path(out_dir) / "performance_comparison.html"
     fig.write_html(str(output_path))
+    # 确保文件可读
+    try:
+        os.chmod(output_path, 0o644)
+    except:
+        pass
     print(f"✓ 性能图表: {output_path}")
 
 
@@ -114,6 +119,11 @@ def plot_stress(stress_df, out_dir):
 
     output_path = Path(out_dir) / "stress_comparison.html"
     fig.write_html(str(output_path))
+    # 确保文件可读
+    try:
+        os.chmod(output_path, 0o644)
+    except:
+        pass
     print(f"✓ 压测图表: {output_path}")
 
 

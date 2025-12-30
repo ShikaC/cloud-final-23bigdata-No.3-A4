@@ -247,7 +247,24 @@ run_visualization() {
     return 0
 }
 
+fix_permissions() {
+    log "优化结果文件权限..."
+    # 确保所有结果文件对当前用户及其组可见 (644)，目录可进入 (755)
+    # 使用 a+rX 是一种简单有效的方式
+    if [[ -d "${RESULT_DIR}" ]]; then
+        chmod -R a+rX "${RESULT_DIR}" 2>/dev/null || true
+        
+        # 如果当前是以 sudo 运行，将结果文件夹的所有权交还给原始用户
+        if [[ -n "${SUDO_USER:-}" ]]; then
+            local real_user="${SUDO_USER}"
+            local real_group=$(id -gn "${SUDO_USER}" 2>/dev/null || echo "${SUDO_USER}")
+            chown -R "${real_user}:${real_group}" "${RESULT_DIR}" 2>/dev/null || true
+        fi
+    fi
+}
+
 show_results() {
+    fix_permissions
     echo ""
     echo -e "${BOLD}${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo -e "${BOLD}${GREEN}  实验完成！${NC}"
