@@ -49,7 +49,7 @@ print_banner() {
     echo ""
     echo -e "${BOLD}${CYAN}╔══════════════════════════════════════════════════════════════╗${NC}"
     echo -e "${BOLD}${CYAN}║                                                              ║${NC}"
-    echo -e "${BOLD}${CYAN}║     云计算虚拟化与容器化性能对比实验                          ║${NC}"
+    echo -e "${BOLD}${CYAN}║     云计算虚拟化与容器化性能对比实验                         ║${NC}"
     echo -e "${BOLD}${CYAN}║     VM vs Docker 性能测试                                    ║${NC}"
     echo -e "${BOLD}${CYAN}║                                                              ║${NC}"
     echo -e "${BOLD}${CYAN}╚══════════════════════════════════════════════════════════════╝${NC}"
@@ -139,7 +139,7 @@ prepare_directories() {
 
 run_vm_test() {
     echo ""
-    echo -e "${BOLD}${BLUE}━━━━ 步骤 1/4: VM 虚拟机测试 ━━━━${NC}"
+    echo -e "${BOLD}${BLUE}━━━━ 步骤 1/5: VM 虚拟机测试 ━━━━${NC}"
     echo ""
     
     if ! bash "${SCRIPT_DIR}/vm_test.sh" \
@@ -157,7 +157,7 @@ run_vm_test() {
 
 run_docker_test() {
     echo ""
-    echo -e "${BOLD}${BLUE}━━━━ 步骤 2/4: Docker容器测试 ━━━━${NC}"
+    echo -e "${BOLD}${BLUE}━━━━ 步骤 2/5: Docker容器测试 ━━━━${NC}"
     echo ""
     
     if ! docker info >/dev/null 2>&1; then
@@ -181,7 +181,7 @@ run_docker_test() {
 
 run_stress_test() {
     echo ""
-    echo -e "${BOLD}${BLUE}━━━━ 步骤 3/4: 压力测试 ━━━━${NC}"
+    echo -e "${BOLD}${BLUE}━━━━ 步骤 3/5: 压力测试 ━━━━${NC}"
     echo ""
     
     # 提升系统文件描述符限制，防止高并发下丢包
