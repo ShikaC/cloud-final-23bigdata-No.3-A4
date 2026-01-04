@@ -42,7 +42,7 @@ install_ubuntu_deps() {
     
     log "安装系统依赖..."
     sudo apt-get install -y nginx docker.io apache2-utils \
-        python3 python3-pip python3-venv \
+        python3 python3-pip python3-venv python3-full \
         curl wget bc net-tools >/dev/null 2>&1
     
     sudo systemctl enable docker >/dev/null 2>&1
@@ -73,29 +73,45 @@ install_centos_deps() {
 install_python_deps() {
     log "安装Python依赖..."
     
+    # 检查python3-venv是否已安装
+    if ! python3 -m venv --help >/dev/null 2>&1; then
+        log_warning "python3-venv未安装，正在安装..."
+        if command -v apt-get >/dev/null 2>&1; then
+            sudo apt-get install -y python3-venv python3-full >/dev/null 2>&1 || true
+        fi
+    fi
+    
     # 创建虚拟环境
     if [ ! -d "$VENV_DIR" ]; then
         log "创建Python虚拟环境..."
-        python3 -m venv "$VENV_DIR" || {
-            log_warning "虚拟环境创建失败，将使用系统Python"
-            python3 -m pip install --user --break-system-packages plotly pandas numpy pillow nbformat 2>/dev/null || \
-                python3 -m pip install --user plotly pandas numpy pillow nbformat
-            log_success "Python依赖安装完成"
-            return
-        }
+        if python3 -m venv "$VENV_DIR" 2>/dev/null; then
+            log_success "虚拟环境创建成功"
+        else
+            log_error "虚拟环境创建失败"
+            log "请手动运行: python3 -m venv ${VENV_DIR}"
+            exit 1
+        fi
+    else
+        log "虚拟环境已存在"
     fi
     
     # 激活虚拟环境
     source "$VENV_DIR/bin/activate"
     
+    # 升级pip
+    log "升级pip..."
+    pip install --upgrade pip -q 2>/dev/null || true
+    
     # 安装依赖
     if [ -f "${SCRIPT_DIR}/requirements.txt" ]; then
+        log "从requirements.txt安装依赖..."
         pip install -q -r "${SCRIPT_DIR}/requirements.txt"
     else
+        log "安装必需的Python包..."
         pip install -q plotly pandas numpy pillow nbformat
     fi
     
-    log_success "Python依赖已安装到虚拟环境"
+    log_success "Python依赖已安装到虚拟环境: ${VENV_DIR}"
 }
 
 verify_installation() {
