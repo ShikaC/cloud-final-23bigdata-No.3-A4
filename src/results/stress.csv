@@ -1,3 +1,0 @@
-platform,qps,avg_latency_ms,failed,transfer_kbps
-vm,33349.23,29.986,0,27780.17
-docker,26579.24,37.623,0,22140.71
